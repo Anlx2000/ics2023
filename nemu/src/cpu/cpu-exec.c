@@ -31,13 +31,17 @@ static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
 void device_update();
-
+void wp_difftest();
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
+
+ 
+
+  wp_difftest(); // 扫描监视点
 }
 
 static void exec_once(Decode *s, vaddr_t pc) {
@@ -74,11 +78,13 @@ static void exec_once(Decode *s, vaddr_t pc) {
 static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
-    exec_once(&s, cpu.pc);
+    
+    exec_once(&s, cpu.pc); // 调用exec_once执行每条指令
     g_nr_guest_inst ++;
-    trace_and_difftest(&s, cpu.pc);
-    if (nemu_state.state != NEMU_RUNNING) break;
-    IFDEF(CONFIG_DEVICE, device_update());
+    printf("excute once\n");
+    trace_and_difftest(&s, cpu.pc); // 调用trace_and_difftest记录trace、执行difftest和检查watchpoint
+    if (nemu_state.state != NEMU_RUNNING) break; // 检查是否程序应该退出（运行到了最后一条指令或者别的原因退出）
+    IFDEF(CONFIG_DEVICE, device_update()); // 更新设备状态
   }
 }
 
@@ -98,7 +104,10 @@ void assert_fail_msg() {
 
 /* Simulate how the CPU works. */
 void cpu_exec(uint64_t n) {
+
+  // whether print assembly code of instructions executed
   g_print_step = (n < MAX_INST_TO_PRINT);
+  
   switch (nemu_state.state) {
     case NEMU_END: case NEMU_ABORT:
       printf("Program execution has ended. To restart the program, exit NEMU and run again.\n");
