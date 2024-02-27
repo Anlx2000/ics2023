@@ -22,10 +22,14 @@ typedef struct watchpoint {
   struct watchpoint *next;
 
   /* TODO: Add more members if necessary */
-
+  char expr[32];
+  sword_t val;
 } WP;
 
 static WP wp_pool[NR_WP] = {};
+
+// head: The watchpoint being used
+// free_: Idle watchpoint
 static WP *head = NULL, *free_ = NULL;
 
 void init_wp_pool() {
@@ -40,4 +44,84 @@ void init_wp_pool() {
 }
 
 /* TODO: Implement the functionality of watchpoint */
+WP* new_wp(){
+  if(free_ == NULL){
+    Log("No free watchpoint alloction!");
+    assert(0);
+    return NULL;
+  }
+  WP* wp_alloc = free_;
+  free_ = free_ -> next;
+
+  wp_alloc -> next = head;
+  head = wp_alloc;
+
+  return wp_alloc;
+}
+
+
+// 回收空闲WP
+void free_wp(WP *wp){
+  if(wp == head){
+    head = head->next;
+  }else{
+    WP* h = head;
+    while(h && h->next != wp) h = h->next;
+    assert(h);
+    h->next = wp->next;
+  }
+  wp->next = free_;
+  free_ = wp;
+
+  return;
+}
+
+
+void wp_watch(char *expr, sword_t val) {
+  WP* wp = new_wp();
+  strcpy(wp->expr, expr);
+  wp->val = val;
+  printf("Watchpoint %d: %s\n", wp->NO, expr);
+}
+
+void wp_remove(int no) {
+  assert(no < NR_WP && no >= 0);
+  WP* wp = &wp_pool[no];
+  free_wp(wp);
+  printf("Delete watchpoint %d: %s\n", wp->NO, wp->expr);
+}
+
+
+void wp_iterate(){
+  WP* h = head;
+  if(h == NULL){
+    Log("No watchpoint been set!");
+    return;
+  }
+  printf("%-8s%-8s%-8s\n", "Num", "Expr", "Val");
+  while (h) {
+    printf("%-8d%-8s%-8lx\n", h->NO, h->expr, h->val);
+    h = h->next;
+  }
+  return;
+}
+
+
+// 观测点检查
+void wp_difftest() {
+  WP* h = head;
+  while (h) {
+    bool _;
+    Log("test");
+    sword_t new_val = expr(h->expr, &_);
+    if (h->val != new_val) {
+      printf("Watchpoint %d: %s\n" "Old value = %ld\n" "New value = %ld\n"
+        , h->NO, h->expr, h->val, new_val);
+      h->val = new_val;
+    }
+    h = h->next;
+  }
+}
+
+
 

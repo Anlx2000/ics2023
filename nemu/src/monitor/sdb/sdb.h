@@ -18,6 +18,10 @@
 
 #include <common.h>
 
-word_t expr(char *e, bool *success);
+sword_t expr(char *e, bool *success);
+void wp_watch(char *expr, sword_t val);
 
+void wp_remove(int no);
+
+void wp_iterate();
 #endif
