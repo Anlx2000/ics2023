@@ -23,9 +23,31 @@ const char *regs[] = {
   "s8", "s9", "s10", "s11", "t3", "t4", "t5", "t6"
 };
 
+
+// print register status ( GPR&PC )
 void isa_reg_display() {
+   
+  Log("General Purpose Registers:");
+  for(int i = 0; i < 32; i++){
+    Log("\t%s = " FMT_WORD " ", regs[i], cpu.gpr[i]);
+  }
+  Log("pc = " FMT_WORD " ", cpu.pc);
 }
 
+
+// get value of register s
 word_t isa_reg_str2val(const char *s, bool *success) {
+  /* s : $+(name of register)  e.g. $ra
+  *  success: whether get value successfully
+  */
+  *success = true;
+  
+  for(int i = 0; i < ARRLEN(regs); i++){
+    if(strcmp(reg_name(i), s+1) == 0){
+      return gpr(i);
+    }
+  }
+  if(strcmp(s+1, "pc")==0) return cpu.pc;
+  *success = false;
   return 0;
 }
